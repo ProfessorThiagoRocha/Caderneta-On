@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CADERNETA ON - Início</title>
+    <style>
+        /* Variáveis de Cores Modernas */
+        :root {
+            --bg-color: #001219;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-cyan: #00afb9;
+            --accent-mint: #94d2bd;
+            --b1-color: #9b2226; /* Vermelho vibrante */
+            --b2-color: #ee9b00; /* Amarelo ouro */
+            --b3-color: #0a9396; /* Verde petróleo */
+            --b4-color: #005f73; /* Azul profundo */
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: radial-gradient(circle at top right, #002d36, #001219); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        /* Título com Glow */
+        h1 { 
+            color: var(--accent-cyan); 
+            margin-bottom: 10px; 
+            font-size: 3.5rem; 
+            font-weight: 900; 
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(0, 175, 185, 0.3);
+        }
+
+        .select-label { 
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 12px 40px; 
+            border-radius: 50px; 
+            color: var(--accent-mint); 
+            font-weight: 600; 
+            font-size: 1.1rem; 
+            margin-bottom: 40px; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        /* Grade de Bimestres Modernizada */
+        .grid-bimestres { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 20px; 
+            margin-bottom: 40px; 
+        }
+
+        .btn-bimestre { 
+            width: 280px; 
+            padding: 40px 20px; 
+            border-radius: 20px; 
+            border: 1px solid var(--glass-border); 
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            color: white; 
+            cursor: pointer; 
+            text-decoration: none; 
+            text-align: center; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-bimestre::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-bimestre:hover::before { left: 100%; }
+
+        .btn-bimestre:hover { 
+            transform: translateY(-10px); 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            filter: brightness(1.2);
+        }
+
+        /* Cores de Bimestre com gradientes */
+        .b1 { background: linear-gradient(135deg, #660708, var(--b1-color)); border-bottom: 4px solid #660708; }
+        .b2 { background: linear-gradient(135deg, #bb3e03, var(--b2-color)); border-bottom: 4px solid #bb3e03; }
+        .b3 { background: linear-gradient(135deg, #005f73, var(--b3-color)); border-bottom: 4px solid #005f73; }
+        .b4 { background: linear-gradient(135deg, #001219, var(--b4-color)); border-bottom: 4px solid #001219; }
+
+        /* Botão Inferior Estilizado */
+        .btn-footer { 
+            background: var(--accent-cyan); 
+            color: #001219; 
+            padding: 18px 60px; 
+            border-radius: 15px; 
+            font-size: 1.1rem; 
+            font-weight: 800; 
+            cursor: pointer; 
+            text-decoration: none; 
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 175, 185, 0.4);
+        }
+
+        .btn-footer:hover { 
+            background: var(--accent-mint);
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(148, 210, 189, 0.5);
+        }
+
+        /* Responsividade Básica */
+        @media (max-width: 650px) {
+            .grid-bimestres { grid-template-columns: 1fr; }
+            .btn-bimestre { width: 80vw; padding: 25px; }
+            h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>CADERNETA ON</h1>
+    
+    <div class="select-label">Painel de Controle</div>
+
+    <div class="grid-bimestres">
+        <a href="frequencia.html" class="btn-bimestre b1" onclick="setBimestre('1º')">
+            <span style="font-size: 0.8rem; opacity: 0.7;">BIMESTRE</span> 1º
+        </a>
+        <a href="frequencia.html" class="btn-bimestre b2" onclick="setBimestre('2º')">
+            <span style="font-size: 0.8rem; opacity: 0.7;">BIMESTRE</span> 2º
+        </a>
+        <a href="frequencia.html" class="btn-bimestre b3" onclick="setBimestre('3º')">
+            <span style="font-size: 0.8rem; opacity: 0.7;">BIMESTRE</span> 3º
+        </a>
+        <a href="frequencia.html" class="btn-bimestre b4" onclick="setBimestre('4º')">
+            <span style="font-size: 0.8rem; opacity: 0.7;">BIMESTRE</span> 4º
+        </a>
+    </div>
+
+    <a href="turmas-alunos.html" class="btn-footer">Configurações de Turmas</a>
+
+    <script>
+        function setBimestre(valor) {
+            localStorage.setItem('bimestre_selecionado', valor);
+        }
+    </script>
+
+</body>
+</html>

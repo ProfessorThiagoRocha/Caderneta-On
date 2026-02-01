@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequência ON - Ultra Fit</title>
+    <style>
+        :root {
+            --bg-main: #001219;
+            --bg-side: #001e26;
+            --accent: #00afb9;
+            --p-color: #2ecc71;
+            --f-color: #e74c3c;
+        }
+
+        /* Fonte base reduzida para 9px para maximizar espaço */
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: var(--bg-main); 
+            color: white; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            font-size: 9px; 
+        }
+
+        /* Sidebar Ultra Estreita (130px) */
+        .sidebar { 
+            width: 130px; 
+            background: var(--bg-side); 
+            padding: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            border-right: 1px solid rgba(0, 175, 185, 0.2); 
+            flex-shrink: 0; /* Impede a sidebar de encolher mais */
+        }
+
+        .back-circle { 
+            width: 28px; height: 28px; 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 4px; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; border: 1px solid var(--accent); 
+            text-decoration: none; font-size: 14px; color: #ffff00; 
+        }
+
+        .card-side { background: rgba(0, 45, 54, 0.4); padding: 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); }
+        .card-title { color: var(--accent); font-weight: 800; font-size: 0.55rem; margin-bottom: 5px; text-transform: uppercase; }
+
+        .btn-turma-side { 
+            width: 100%; background: transparent; border: 1px solid transparent; 
+            color: #94d2bd; padding: 4px 6px; border-radius: 4px; cursor: pointer; 
+            margin-bottom: 2px; text-align: left; font-size: 0.65rem; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .btn-turma-side.active { background: var(--accent); color: var(--bg-main); font-weight: bold; }
+
+        input, select { 
+            background: #001219; border: 1px solid #0a9396; color: white; 
+            padding: 3px; width: 100%; border-radius: 3px; margin-bottom: 5px; font-size: 0.65rem; 
+        }
+
+        .btn-add { 
+            background: var(--accent); border: none; color: var(--bg-main); 
+            padding: 5px; width: 100%; border-radius: 4px; font-weight: 800; 
+            cursor: pointer; text-transform: uppercase; font-size: 0.6rem; 
+        }
+
+        /* Main Area */
+        .main { flex: 1; padding: 5px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .info-topo { 
+            color: #94d2bd; font-weight: 800; margin-bottom: 5px; font-size: 0.8rem; 
+            text-align: center; background: rgba(255,255,255,0.03); padding: 5px; 
+            border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Container da Tabela com Scroll mais fino */
+        .table-container { 
+            flex: 1; overflow: auto; border-radius: 4px; border: 1px solid rgba(0, 175, 185, 0.2); 
+        }
+        
+        table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+        
+        /* Células Compactas */
+        th, td { border: 1px solid rgba(255,255,255,0.03); text-align: center; height: 22px; }
+        
+        .nome-header { 
+            background: #002d36; color: var(--accent); width: 110px; text-align: left; 
+            padding-left: 5px; position: sticky; left: 0; z-index: 5; 
+            font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .data-header { font-size: 0.5rem; width: 28px; background: #001e26; color: #94d2bd; line-height: 1; }
+        .aula-texto { display: block; font-weight: 800; color: #fff; }
+        .faltas-header { width: 30px; background: #002d36; color: #fff; font-size: 0.65rem; }
+
+        /* Círculos de presença minúsculos */
+        .cell-presenca span { 
+            display: flex; align-items: center; justify-content: center; 
+            width: 16px; height: 16px; margin: 0 auto; border-radius: 3px; 
+            font-weight: 900; font-size: 0.75rem; 
+        }
+
+        .p-box { background: var(--p-color) !important; color: #001219 !important; }
+        .f-box { background: var(--f-color) !important; color: white !important; }
+        .faltas-col { color: var(--f-color); font-weight: 900; font-size: 0.8rem; }
+
+        tr:nth-child(even) { background: rgba(255,255,255,0.01); }
+
+        /* Scrollbar Minimalista */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <a href="pagina-inicial.html" class="back-circle">⬅</a>
+    <div class="card-side">
+        <div class="card-title">Turmas</div>
+        <div id="lista_botoes_turmas" style="max-height: 200px; overflow-y: auto;">...</div>
+    </div>
+    <div class="card-side">
+        <div class="card-title">Nova Aula</div>
+        <input type="date" id="data_nova">
+        <select id="aula_nova">
+            <option value="1ª Aula">1ª</option>
+            <option value="2ª Aula">2ª</option>
+            <option value="3ª Aula">3ª</option>
+            <option value="4ª Aula">4ª</option>
+        </select>
+        <button class="btn-add" onclick="adicionarColuna()">ADD</button>
+    </div>
+</div>
+
+<div class="main">
+    <div id="info_selecao" class="info-topo">Selecione uma turma</div>
+    <div class="table-container">
+        <table>
+            <thead id="head_freq"></thead>
+            <tbody id="body_freq"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5YNSxfjrQ92rCpSYEN-pjdpV9sl9JbdCqqSCl2j8-Q5wSuOWh24DZ9z9qTOzPmD3C/exec";
+    let dadosBanco = { alunos: [], frequencia: [] };
+    let turmaAtiva = "";
+    let bimestreAtivo = (localStorage.getItem('bimestre_selecionado') || "1º").trim();
+    let colunasLocais = new Set(); 
+
+    function formatarDataSimples(d) {
+        if (!d) return "";
+        let s = d.toString();
+        return s.includes('T') ? s.split('T')[0] : s.split(' ')[0];
+    }
+
+    async function carregar() {
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const json = await res.json();
+            dadosBanco.alunos = (json.alunos || []).filter(al => al[0] && al[0].trim() !== "" && al[0].trim() !== "TURMA CRIADA" && al[0].trim() !== "NOME DO ALUNO");
+            dadosBanco.frequencia = json.frequencia || [];
+            renderizarBotoes();
+            if(turmaAtiva) montarTabela();
+        } catch(e) { console.log("Erro de carga"); }
+    }
+
+    function renderizarBotoes() {
+        const listaBtn = document.getElementById('lista_botoes_turmas');
+        let turmasUnicas = [...new Set(dadosBanco.alunos.map(a => `${a[1]} | ${a[2]}`))];
+        listaBtn.innerHTML = turmasUnicas.map(t => {
+            let active = (turmaAtiva === t) ? 'active' : '';
+            return `<button class="btn-turma-side ${active}" onclick="selecionarTurma('${t}')">${t}</button>`;
+        }).join('');
+    }
+
+    function selecionarTurma(t) {
+        turmaAtiva = t;
+        colunasLocais.clear();
+        document.getElementById('info_selecao').innerText = `${bimestreAtivo} BIM - ${t}`;
+        renderizarBotoes();
+        montarTabela();
+    }
+
+    function montarTabela() {
+        if(!turmaAtiva) return;
+        const [serie, turma] = turmaAtiva.split(' | ').map(s => s.trim());
+        const head = document.getElementById('head_freq');
+        const body = document.getElementById('body_freq');
+        
+        let setAulasReais = new Set();
+        dadosBanco.frequencia.forEach(f => {
+            if (String(f[3]).trim() == serie && String(f[4]).trim() == turma && String(f[6]).trim() == bimestreAtivo) {
+                setAulasReais.add(`${formatarDataSimples(f[0])} ${String(f[1]).trim()}`);
+            }
+        });
+        colunasLocais.forEach(c => setAulasReais.add(c));
+        let listaAulasSorted = Array.from(setAulasReais).sort();
+
+        let htmlHead = `<tr><th class="nome-header">ALUNOS</th>`;
+        listaAulasSorted.forEach((chave, i) => {
+            if (i < 25) {
+                let [dt, ...rest] = chave.split(' ');
+                let dtBr = dt.split('-').reverse().slice(0,2).join('/');
+                htmlHead += `<th class="data-header"><span class="aula-texto">${rest.join(' ').replace(/\D/g,'')}º</span>${dtBr}</th>`;
+            }
+        });
+        for(let i=listaAulasSorted.length; i<25; i++) htmlHead += `<th class="data-header" style="color:rgba(255,255,255,0.02)">--</th>`;
+        htmlHead += `<th class="faltas-header">F</th></tr>`;
+        head.innerHTML = htmlHead;
+
+        body.innerHTML = "";
+        dadosBanco.alunos.filter(al => String(al[1]).trim() == serie && String(al[2]).trim() == turma).forEach(al => {
+            let totalF = 0;
+            let nomeAl = String(al[0]).trim();
+            let linha = `<tr><td class="nome-header">${nomeAl}</td>`;
+            for(let i=0; i < 25; i++) {
+                let chave = listaAulasSorted[i];
+                if(chave) {
+                    let [cData, ...cRest] = chave.split(' ');
+                    let cAula = cRest.join(' ').trim();
+                    let registro = [...dadosBanco.frequencia].reverse().find(f => 
+                        String(f[2]).trim().toUpperCase() === nomeAl.toUpperCase() &&
+                        formatarDataSimples(f[0]) === cData &&
+                        String(f[1]).trim().toUpperCase() === cAula.toUpperCase() &&
+                        String(f[6]).trim() === bimestreAtivo
+                    );
+
+                    let status = registro ? String(registro[5]).trim().toUpperCase() : "";
+                    if(status === "F") totalF++;
+                    let classe = status === "P" ? "p-box" : (status === "F" ? "f-box" : "");
+                    linha += `<td class="cell-presenca" onclick="cicloFrequencia('${nomeAl.replace(/'/g, "\\'")}','${chave}','${status}')"><span class="${classe}">${status}</span></td>`;
+                } else { linha += `<td></td>`; }
+            }
+            linha += `<td class="faltas-col">${totalF}</td></tr>`;
+            body.innerHTML += linha;
+        });
+    }
+
+    function cicloFrequencia(aluno, chave, atual) {
+        let novo = (atual === "") ? "P" : (atual === "P" ? "F" : "");
+        const [vData, ...rest] = chave.split(' ');
+        const vAula = rest.join(' ').trim();
+        const [serie, turma] = turmaAtiva.split(' | ').map(s => s.trim());
+        dadosBanco.frequencia.push([vData, vAula, aluno, serie, turma, novo, bimestreAtivo]);
+        montarTabela();
+        fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo: "frequencia", data: vData, aula: vAula, aluno: aluno, serie: serie, turma: turma, status: novo, bimestre: bimestreAtivo }) });
+    }
+
+    function adicionarColuna() {
+        const d = document.getElementById('data_nova').value;
+        const a = document.getElementById('aula_nova').value;
+        if(!d || !turmaAtiva) return;
+        colunasLocais.add(`${d} ${a}`);
+        montarTabela();
+    }
+    window.onload = carregar;
+</script>
+</body>
+</html>
