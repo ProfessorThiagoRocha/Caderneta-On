@@ -13,7 +13,6 @@
             --f-color: #e74c3c;
         }
 
-        /* Fonte base reduzida para 9px para maximizar espaço */
         body { 
             margin: 0; 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
@@ -25,7 +24,6 @@
             font-size: 9px; 
         }
 
-        /* Sidebar Ultra Estreita (130px) */
         .sidebar { 
             width: 130px; 
             background: var(--bg-side); 
@@ -34,7 +32,7 @@
             flex-direction: column; 
             gap: 8px; 
             border-right: 1px solid rgba(0, 175, 185, 0.2); 
-            flex-shrink: 0; /* Impede a sidebar de encolher mais */
+            flex-shrink: 0;
         }
 
         .back-circle { 
@@ -68,7 +66,6 @@
             cursor: pointer; text-transform: uppercase; font-size: 0.6rem; 
         }
 
-        /* Main Area */
         .main { flex: 1; padding: 5px; display: flex; flex-direction: column; overflow: hidden; }
         
         .info-topo { 
@@ -77,14 +74,11 @@
             border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* Container da Tabela com Scroll mais fino */
         .table-container { 
             flex: 1; overflow: auto; border-radius: 4px; border: 1px solid rgba(0, 175, 185, 0.2); 
         }
         
         table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-        
-        /* Células Compactas */
         th, td { border: 1px solid rgba(255,255,255,0.03); text-align: center; height: 22px; }
         
         .nome-header { 
@@ -97,7 +91,6 @@
         .aula-texto { display: block; font-weight: 800; color: #fff; }
         .faltas-header { width: 30px; background: #002d36; color: #fff; font-size: 0.65rem; }
 
-        /* Círculos de presença minúsculos */
         .cell-presenca span { 
             display: flex; align-items: center; justify-content: center; 
             width: 16px; height: 16px; margin: 0 auto; border-radius: 3px; 
@@ -110,7 +103,6 @@
 
         tr:nth-child(even) { background: rgba(255,255,255,0.01); }
 
-        /* Scrollbar Minimalista */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
     </style>
@@ -118,7 +110,7 @@
 <body>
 
 <div class="sidebar">
-    <a href="pagina-inicial.html" class="back-circle">⬅</a>
+    <a href="index.html" class="back-circle">⬅</a>
     <div class="card-side">
         <div class="card-title">Turmas</div>
         <div id="lista_botoes_turmas" style="max-height: 200px; overflow-y: auto;">...</div>
