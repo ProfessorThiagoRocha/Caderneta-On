@@ -51,10 +51,11 @@
         }
 
         .btn-turma-side {
-            width: 100%; background: transparent; border: 1px solid var(--accent);
+            width: 100%; background: transparent; border: 1px solid transparent;
             color: white; padding: 8px; border-radius: 8px; cursor: pointer;
             margin-bottom: 8px; font-size: 0.8rem; transition: 0.3s;
             text-align: left;
+            border: 1px solid var(--accent);
         }
 
         .btn-turma-side.active { background: var(--accent); color: #001219; font-weight: bold; }
@@ -87,7 +88,15 @@
             color: #f1c40f;
         }
 
-        .info-turma-ativa { margin-bottom: 10px; font-weight: bold; color: #94d2bd; font-size: 1.1rem; }
+        .info-turma-ativa { 
+            margin-bottom: 10px; font-weight: bold; color: #94d2bd; font-size: 1.1rem; 
+            display: flex; align-items: center; gap: 15px;
+        }
+
+        .btn-edit-turma {
+            background: #f1c40f; color: #000; border: none; padding: 4px 10px;
+            border-radius: 5px; cursor: pointer; font-size: 0.7rem; font-weight: bold;
+        }
 
         /* Table Area */
         .table-container { 
@@ -176,7 +185,7 @@
         bimestreAtivo = novoBim;
         localStorage.setItem('bimestre_selecionado', novoBim);
         atualizarInterfaceBimestre();
-        colunasLocais.clear(); // Limpa colunas temporárias ao trocar de bimestre
+        colunasLocais.clear();
         montarTabela();
     }
 
@@ -184,7 +193,11 @@
         try {
             const res = await fetch(SCRIPT_URL);
             const json = await res.json();
-            dadosBanco.alunos = json.alunos.filter(al => al[0] !== "TURMA CRIADA" && al[0] !== "NOME DO ALUNO");
+            dadosBanco.alunos = json.alunos.filter(al => 
+                al[0] !== "TURMA CRIADA" && 
+                al[0] !== "NOME DO ALUNO" &&
+                !String(al[1]).toUpperCase().includes("SÉRIE")
+            );
             dadosBanco.atividades = json.atividades || [];
             renderizarBotoes();
             atualizarInterfaceBimestre();
@@ -193,15 +206,49 @@
 
     function renderizarBotoes() {
         const lista = document.getElementById('lista_botoes_turmas');
-        let turmasUnicas = [...new Set(dadosBanco.alunos.map(a => `${a[1]} | ${a[2]}`))];
+        let turmasUnicas = [...new Set(dadosBanco.alunos.map(a => `${a[1]} | ${a[2]}`))]
+            .filter(t => !t.toUpperCase().includes("SÉRIE") && !t.toUpperCase().includes("TURMA"))
+            .sort();
+            
         lista.innerHTML = turmasUnicas.map(t => `<button class="btn-turma-side ${turmaAtiva === t ? 'active' : ''}" onclick="selecionarTurma('${t}')">${t}</button>`).join('');
     }
 
     function selecionarTurma(t) {
         turmaAtiva = t;
-        document.getElementById('info_turma').innerText = `TURMA: ${t}`;
+        document.getElementById('info_turma').innerHTML = `
+            <span>TURMA: ${t}</span>
+            <button class="btn-edit-turma" onclick="editarTurma()">EDITAR NOME</button>
+        `;
         renderizarBotoes();
         montarTabela();
+    }
+
+    function editarTurma() {
+        if(!turmaAtiva) return;
+        const [serieAntiga, turmaAntiga] = turmaAtiva.split(' | ').map(s => s.trim());
+        
+        let novaSerie = prompt("Novo nome da SÉRIE:", serieAntiga);
+        if (novaSerie === null) return;
+        
+        let novaTurma = prompt("Novo nome da TURMA:", turmaAntiga);
+        if (novaTurma === null) return;
+
+        if(confirm(`Alterar de "${serieAntiga} | ${turmaAntiga}" para "${novaSerie} | ${novaTurma}"?`)) {
+            fetch(SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ 
+                    tipo: "editar_turma", 
+                    serieAntiga: serieAntiga, 
+                    turmaAntiga: turmaAntiga,
+                    novaSerie: novaSerie,
+                    novaTurma: novaTurma
+                }) 
+            }).then(() => {
+                alert("Turma renomeada com sucesso! Atualizando...");
+                location.reload();
+            });
+        }
     }
 
     function montarTabela() {
@@ -227,7 +274,11 @@
         head.innerHTML = htmlHead + `</tr>`;
 
         body.innerHTML = "";
-        dadosBanco.alunos.filter(al => String(al[1]).trim() == serie && String(al[2]).trim() == turma).forEach(al => {
+        const alunosFiltrados = dadosBanco.alunos
+            .filter(al => String(al[1]).trim() == serie && String(al[2]).trim() == turma)
+            .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+
+        alunosFiltrados.forEach(al => {
             let nomeAl = al[0];
             let linha = `<tr><td class="nome-header">${nomeAl}</td>`;
             colunas.forEach(c => {

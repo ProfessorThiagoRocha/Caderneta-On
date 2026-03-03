@@ -257,7 +257,10 @@
                     series.add(linha[1]); turmas.add(linha[2]);
                 });
 
-                for (let chaveID in agrupados) {
+                // Ordenar as turmas (chaves) em ordem alfabética
+                const turmasOrdenadas = Object.keys(agrupados).sort();
+
+                for (let chaveID of turmasOrdenadas) {
                     let [s, t] = chaveID.split(' - ');
                     tbody.innerHTML += `
                         <tr class="header-turma">
@@ -267,6 +270,7 @@
                             </td>
                         </tr>`;
                     
+                    // Alunos já estão sendo ordenados aqui
                     agrupados[chaveID].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(aluno => {
                         tbody.innerHTML += `
                             <tr>
@@ -280,8 +284,8 @@
 
                 selS.innerHTML = '<option value="">Série...</option>'; 
                 selT.innerHTML = '<option value="">Turma...</option>';
-                series.forEach(s => selS.innerHTML += `<option value="${s}">${s}</option>`);
-                turmas.forEach(t => selT.innerHTML += `<option value="${t}">${t}</option>`);
+                Array.from(series).sort().forEach(s => selS.innerHTML += `<option value="${s}">${s}</option>`);
+                Array.from(turmas).sort().forEach(t => selT.innerHTML += `<option value="${t}">${t}</option>`);
             } catch (e) { console.error("Erro na carga:", e); }
         }
 

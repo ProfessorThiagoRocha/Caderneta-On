@@ -70,8 +70,14 @@
         
         .info-topo { 
             color: #94d2bd; font-weight: 800; margin-bottom: 5px; font-size: 0.8rem; 
-            text-align: center; background: rgba(255,255,255,0.03); padding: 5px; 
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.03); padding: 5px; 
             border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .btn-edit-turma {
+            background: #f1c40f; color: #000; border: none; padding: 2px 6px;
+            border-radius: 3px; cursor: pointer; font-size: 0.6rem; font-weight: bold;
         }
 
         .table-container { 
@@ -155,7 +161,12 @@
         try {
             const res = await fetch(SCRIPT_URL);
             const json = await res.json();
-            dadosBanco.alunos = (json.alunos || []).filter(al => al[0] && al[0].trim() !== "" && al[0].trim() !== "TURMA CRIADA" && al[0].trim() !== "NOME DO ALUNO");
+            dadosBanco.alunos = (json.alunos || []).filter(al => 
+                al[0] && 
+                al[0].trim() !== "" && 
+                al[0].trim() !== "TURMA CRIADA" && 
+                al[0].trim() !== "NOME DO ALUNO"
+            );
             dadosBanco.frequencia = json.frequencia || [];
             renderizarBotoes();
             if(turmaAtiva) montarTabela();
@@ -164,7 +175,11 @@
 
     function renderizarBotoes() {
         const listaBtn = document.getElementById('lista_botoes_turmas');
-        let turmasUnicas = [...new Set(dadosBanco.alunos.map(a => `${a[1]} | ${a[2]}`))];
+        // Filtra para não mostrar o cabeçalho "SÉRIE | TURMA" como se fosse uma turma
+        let turmasUnicas = [...new Set(dadosBanco.alunos.map(a => `${a[1]} | ${a[2]}`))]
+            .filter(t => !t.toUpperCase().includes("SÉRIE") && !t.toUpperCase().includes("TURMA"))
+            .sort();
+
         listaBtn.innerHTML = turmasUnicas.map(t => {
             let active = (turmaAtiva === t) ? 'active' : '';
             return `<button class="btn-turma-side ${active}" onclick="selecionarTurma('${t}')">${t}</button>`;
@@ -174,9 +189,40 @@
     function selecionarTurma(t) {
         turmaAtiva = t;
         colunasLocais.clear();
-        document.getElementById('info_selecao').innerText = `${bimestreAtivo} BIM - ${t}`;
+        document.getElementById('info_selecao').innerHTML = `
+            <span>${bimestreAtivo} BIM - ${t}</span>
+            <button class="btn-edit-turma" onclick="editarTurma()">EDITAR NOME</button>
+        `;
         renderizarBotoes();
         montarTabela();
+    }
+
+    function editarTurma() {
+        if(!turmaAtiva) return;
+        const [serieAntiga, turmaAntiga] = turmaAtiva.split(' | ').map(s => s.trim());
+        
+        let novaSerie = prompt("Novo nome da SÉRIE:", serieAntiga);
+        if (novaSerie === null) return;
+        
+        let novaTurma = prompt("Novo nome da TURMA:", turmaAntiga);
+        if (novaTurma === null) return;
+
+        if(confirm(`Alterar de "${serieAntiga} | ${turmaAntiga}" para "${novaSerie} | ${novaTurma}"?`)) {
+            fetch(SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ 
+                    tipo: "editar_turma", 
+                    serieAntiga: serieAntiga, 
+                    turmaAntiga: turmaAntiga,
+                    novaSerie: novaSerie,
+                    novaTurma: novaTurma
+                }) 
+            }).then(() => {
+                alert("Turma renomeada! A página será atualizada.");
+                location.reload();
+            });
+        }
     }
 
     function montarTabela() {
@@ -207,7 +253,11 @@
         head.innerHTML = htmlHead;
 
         body.innerHTML = "";
-        dadosBanco.alunos.filter(al => String(al[1]).trim() == serie && String(al[2]).trim() == turma).forEach(al => {
+        const alunosFiltrados = dadosBanco.alunos
+            .filter(al => String(al[1]).trim() == serie && String(al[2]).trim() == turma)
+            .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+
+        alunosFiltrados.forEach(al => {
             let totalF = 0;
             let nomeAl = String(al[0]).trim();
             let linha = `<tr><td class="nome-header">${nomeAl}</td>`;
