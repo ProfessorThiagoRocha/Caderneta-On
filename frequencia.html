@@ -66,6 +66,56 @@
             cursor: pointer; text-transform: uppercase; font-size: 0.6rem; 
         }
 
+        /* Botão Salvar */
+        .btn-salvar {
+            background: #2ecc71;
+            border: none;
+            color: #001219;
+            padding: 7px;
+            width: 100%;
+            border-radius: 4px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: 0.2s;
+            position: relative;
+        }
+        .btn-salvar:disabled {
+            background: #1a7a43;
+            color: rgba(0,0,0,0.5);
+            cursor: not-allowed;
+        }
+        .btn-salvar.pendente {
+            background: #f1c40f;
+            color: #001219;
+            animation: pulse 1.2s infinite;
+        }
+        .btn-salvar.erro {
+            background: #e74c3c;
+            color: white;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Badge de itens pendentes */
+        .badge-pendente {
+            background: #e74c3c;
+            color: white;
+            border-radius: 8px;
+            padding: 1px 5px;
+            font-size: 0.6rem;
+            font-weight: 900;
+            display: none;
+        }
+        .badge-pendente.visivel { display: inline; }
+
         .main { flex: 1; padding: 5px; display: flex; flex-direction: column; overflow: hidden; }
         
         .info-topo { 
@@ -105,15 +155,42 @@
 
         .p-box { background: var(--p-color) !important; color: #001219 !important; }
         .f-box { background: var(--f-color) !important; color: white !important; }
+        /* Célula com alteração ainda não salva */
+        .cell-presenca.nao-salvo span {
+            outline: 2px solid #f1c40f;
+            outline-offset: 1px;
+        }
         .faltas-col { color: var(--f-color); font-weight: 900; font-size: 0.8rem; }
 
         tr:nth-child(even) { background: rgba(255,255,255,0.01); }
 
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        /* Toast de notificação */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 999;
+        }
+        #toast.show { opacity: 1; }
+        #toast.sucesso { background: #2ecc71; color: #001219; }
+        #toast.erro { background: #e74c3c; }
+        #toast.aviso { background: #f1c40f; color: #001219; }
     </style>
 </head>
 <body>
+
+<div id="toast"></div>
 
 <div class="sidebar">
     <a href="index.html" class="back-circle">⬅</a>
@@ -132,6 +209,15 @@
         </select>
         <button class="btn-add" onclick="adicionarColuna()">ADD</button>
     </div>
+    <div class="card-side">
+        <div class="card-title">
+            Salvar
+            <span class="badge-pendente" id="badge_pendente">0</span>
+        </div>
+        <button class="btn-salvar" id="btn_salvar" onclick="salvarTudo()">
+            💾 SALVAR TUDO
+        </button>
+    </div>
 </div>
 
 <div class="main">
@@ -149,12 +235,83 @@
     let dadosBanco = { alunos: [], frequencia: [] };
     let turmaAtiva = "";
     let bimestreAtivo = (localStorage.getItem('bimestre_selecionado') || "1º").trim();
-    let colunasLocais = new Set(); 
+    let colunasLocais = new Set();
+
+    // Fila de alterações pendentes para salvar em lote
+    let filaParaSalvar = []; // { data, aula, aluno, serie, turma, status, bimestre }
 
     function formatarDataSimples(d) {
         if (!d) return "";
         let s = d.toString();
         return s.includes('T') ? s.split('T')[0] : s.split(' ')[0];
+    }
+
+    function mostrarToast(msg, tipo = 'sucesso') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `show ${tipo}`;
+        setTimeout(() => { t.className = ''; }, 3000);
+    }
+
+    function atualizarBotaoSalvar() {
+        const btn = document.getElementById('btn_salvar');
+        const badge = document.getElementById('badge_pendente');
+        const qtd = filaParaSalvar.length;
+
+        badge.textContent = qtd;
+        if (qtd > 0) {
+            badge.classList.add('visivel');
+            btn.classList.add('pendente');
+            btn.classList.remove('erro');
+            btn.disabled = false;
+        } else {
+            badge.classList.remove('visivel');
+            btn.classList.remove('pendente', 'erro');
+            btn.disabled = true;
+        }
+    }
+
+    async function salvarTudo() {
+        if (filaParaSalvar.length === 0) return;
+
+        const btn = document.getElementById('btn_salvar');
+        btn.textContent = '⏳ Salvando...';
+        btn.disabled = true;
+
+        // Salva cada item da fila sequencialmente
+        let erros = 0;
+        const filaSnapshot = [...filaParaSalvar];
+
+        for (const item of filaSnapshot) {
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ tipo: "frequencia", ...item })
+                });
+            } catch (e) {
+                erros++;
+            }
+        }
+
+        filaParaSalvar = [];
+
+        if (erros === 0) {
+            mostrarToast(`✅ ${filaSnapshot.length} registro(s) salvo(s) com sucesso!`, 'sucesso');
+            btn.textContent = '✅ SALVO';
+            setTimeout(() => {
+                btn.textContent = '💾 SALVAR TUDO';
+                atualizarBotaoSalvar();
+            }, 2000);
+        } else {
+            mostrarToast(`⚠️ ${erros} erro(s) ao salvar. Tente novamente.`, 'erro');
+            btn.classList.add('erro');
+            btn.textContent = '❌ ERRO - TENTAR NOVAMENTE';
+            btn.disabled = false;
+        }
+
+        // Remover marcação visual de "não salvo"
+        document.querySelectorAll('.cell-presenca.nao-salvo').forEach(c => c.classList.remove('nao-salvo'));
     }
 
     async function carregar() {
@@ -175,7 +332,6 @@
 
     function renderizarBotoes() {
         const listaBtn = document.getElementById('lista_botoes_turmas');
-        // Filtra para não mostrar o cabeçalho "SÉRIE | TURMA" como se fosse uma turma
         let turmasUnicas = [...new Set(dadosBanco.alunos.map(a => `${a[1]} | ${a[2]}`))]
             .filter(t => !t.toUpperCase().includes("SÉRIE") && !t.toUpperCase().includes("TURMA"))
             .sort();
@@ -187,6 +343,14 @@
     }
 
     function selecionarTurma(t) {
+        // Avisa se há pendências ao trocar de turma
+        if (filaParaSalvar.length > 0) {
+            if (!confirm(`Você tem ${filaParaSalvar.length} alteração(ões) não salva(s). Deseja trocar de turma sem salvar?`)) {
+                return;
+            }
+            filaParaSalvar = [];
+            atualizarBotaoSalvar();
+        }
         turmaAtiva = t;
         colunasLocais.clear();
         document.getElementById('info_selecao').innerHTML = `
@@ -266,6 +430,8 @@
                 if(chave) {
                     let [cData, ...cRest] = chave.split(' ');
                     let cAula = cRest.join(' ').trim();
+
+                    // Busca o último registro salvo no banco (sem duplicata visual)
                     let registro = [...dadosBanco.frequencia].reverse().find(f => 
                         String(f[2]).trim().toUpperCase() === nomeAl.toUpperCase() &&
                         formatarDataSimples(f[0]) === cData &&
@@ -273,10 +439,16 @@
                         String(f[6]).trim() === bimestreAtivo
                     );
 
-                    let status = registro ? String(registro[5]).trim().toUpperCase() : "";
+                    // Verifica se há alteração pendente na fila (sobrepõe o banco local)
+                    let pendente = filaParaSalvar.slice().reverse().find(p =>
+                        p.aluno === nomeAl && p.data === cData && p.aula === cAula && p.bimestre === bimestreAtivo
+                    );
+
+                    let status = pendente ? pendente.status : (registro ? String(registro[5]).trim().toUpperCase() : "");
                     if(status === "F") totalF++;
                     let classe = status === "P" ? "p-box" : (status === "F" ? "f-box" : "");
-                    linha += `<td class="cell-presenca" onclick="cicloFrequencia('${nomeAl.replace(/'/g, "\\'")}','${chave}','${status}')"><span class="${classe}">${status}</span></td>`;
+                    let naoSalvoClass = pendente ? "nao-salvo" : "";
+                    linha += `<td class="cell-presenca ${naoSalvoClass}" onclick="cicloFrequencia('${nomeAl.replace(/'/g, "\\'")}','${chave}','${status}')"><span class="${classe}">${status}</span></td>`;
                 } else { linha += `<td></td>`; }
             }
             linha += `<td class="faltas-col">${totalF}</td></tr>`;
@@ -289,9 +461,33 @@
         const [vData, ...rest] = chave.split(' ');
         const vAula = rest.join(' ').trim();
         const [serie, turma] = turmaAtiva.split(' | ').map(s => s.trim());
-        dadosBanco.frequencia.push([vData, vAula, aluno, serie, turma, novo, bimestreAtivo]);
+
+        // ✅ UPSERT LOCAL: atualiza se já existe na fila, senão adiciona
+        let idxFila = filaParaSalvar.findIndex(p =>
+            p.aluno === aluno && p.data === vData && p.aula === vAula && p.bimestre === bimestreAtivo
+        );
+        const novoItem = { data: vData, aula: vAula, aluno, serie, turma, status: novo, bimestre: bimestreAtivo };
+        if (idxFila > -1) {
+            filaParaSalvar[idxFila] = novoItem;
+        } else {
+            filaParaSalvar.push(novoItem);
+        }
+
+        // ✅ UPSERT no banco local (sem duplicata)
+        let idxBanco = dadosBanco.frequencia.findIndex(f =>
+            String(f[2]).trim().toUpperCase() === aluno.toUpperCase() &&
+            formatarDataSimples(f[0]) === vData &&
+            String(f[1]).trim().toUpperCase() === vAula.toUpperCase() &&
+            String(f[6]).trim() === bimestreAtivo
+        );
+        if (idxBanco > -1) {
+            dadosBanco.frequencia[idxBanco][5] = novo;
+        } else {
+            dadosBanco.frequencia.push([vData, vAula, aluno, serie, turma, novo, bimestreAtivo]);
+        }
+
+        atualizarBotaoSalvar();
         montarTabela();
-        fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo: "frequencia", data: vData, aula: vAula, aluno: aluno, serie: serie, turma: turma, status: novo, bimestre: bimestreAtivo }) });
     }
 
     function adicionarColuna() {
@@ -301,7 +497,19 @@
         colunasLocais.add(`${d} ${a}`);
         montarTabela();
     }
-    window.onload = carregar;
+
+    // Avisa ao sair com pendências
+    window.addEventListener('beforeunload', function(e) {
+        if (filaParaSalvar.length > 0) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    window.onload = () => {
+        carregar();
+        atualizarBotaoSalvar();
+    };
 </script>
 </body>
 </html>
