@@ -145,6 +145,13 @@
 
         .data-header { font-size: 0.5rem; width: 28px; background: #001e26; color: #94d2bd; line-height: 1; }
         .aula-texto { display: block; font-weight: 800; color: #fff; }
+        .btn-all {
+            display: block; margin: 2px auto 0; padding: 1px 3px; width: 22px;
+            font-size: 0.45rem; font-weight: 800; line-height: 1.2;
+            background: transparent; color: var(--accent);
+            border: 1px solid var(--accent); border-radius: 3px; cursor: pointer;
+        }
+        .btn-all:hover { background: var(--accent); color: var(--bg-main); }
         .faltas-header { width: 30px; background: #002d36; color: #fff; font-size: 0.65rem; }
 
         .cell-presenca span { 
@@ -409,7 +416,7 @@
             if (i < 25) {
                 let [dt, ...rest] = chave.split(' ');
                 let dtBr = dt.split('-').reverse().slice(0,2).join('/');
-                htmlHead += `<th class="data-header"><span class="aula-texto">${rest.join(' ').replace(/\D/g,'')}º</span>${dtBr}</th>`;
+                htmlHead += `<th class="data-header"><span class="aula-texto">${rest.join(' ').replace(/\D/g,'')}º</span>${dtBr}<button class="btn-all" title="Marcar todos como presentes (clique de novo para limpar)" onclick="marcarTodos('${chave}')">ALL</button></th>`;
             }
         });
         for(let i=listaAulasSorted.length; i<25; i++) htmlHead += `<th class="data-header" style="color:rgba(255,255,255,0.02)">--</th>`;
@@ -456,8 +463,8 @@
         });
     }
 
-    function cicloFrequencia(aluno, chave, atual) {
-        let novo = (atual === "") ? "P" : (atual === "P" ? "F" : "");
+    // Aplica um status a um aluno/aula (fila + banco local), sem redesenhar a tabela
+    function aplicarStatus(aluno, chave, novo) {
         const [vData, ...rest] = chave.split(' ');
         const vAula = rest.join(' ').trim();
         const [serie, turma] = turmaAtiva.split(' | ').map(s => s.trim());
@@ -485,6 +492,47 @@
         } else {
             dadosBanco.frequencia.push([vData, vAula, aluno, serie, turma, novo, bimestreAtivo]);
         }
+    }
+
+    function cicloFrequencia(aluno, chave, atual) {
+        let novo = (atual === "") ? "P" : (atual === "P" ? "F" : "");
+        aplicarStatus(aluno, chave, novo);
+        atualizarBotaoSalvar();
+        montarTabela();
+    }
+
+    // Botão ALL: marca todos os alunos da coluna como P.
+    // Se todos já estiverem como P, limpa a coluna inteira.
+    function marcarTodos(chave) {
+        if (!turmaAtiva) return;
+        const [serie, turma] = turmaAtiva.split(' | ').map(s => s.trim());
+        const [vData, ...rest] = chave.split(' ');
+        const vAula = rest.join(' ').trim();
+
+        const alunos = dadosBanco.alunos
+            .filter(al => String(al[1]).trim() == serie && String(al[2]).trim() == turma)
+            .map(al => String(al[0]).trim());
+
+        const statusDe = (nome) => {
+            let pend = filaParaSalvar.slice().reverse().find(p =>
+                p.aluno === nome && p.data === vData && p.aula === vAula && p.bimestre === bimestreAtivo
+            );
+            if (pend) return pend.status;
+            let reg = [...dadosBanco.frequencia].reverse().find(f =>
+                String(f[2]).trim().toUpperCase() === nome.toUpperCase() &&
+                formatarDataSimples(f[0]) === vData &&
+                String(f[1]).trim().toUpperCase() === vAula.toUpperCase() &&
+                String(f[6]).trim() === bimestreAtivo
+            );
+            return reg ? String(reg[5]).trim().toUpperCase() : "";
+        };
+
+        const todosPresentes = alunos.length > 0 && alunos.every(n => statusDe(n) === "P");
+        const novo = todosPresentes ? "" : "P";
+
+        alunos.forEach(nome => {
+            if (statusDe(nome) !== novo) aplicarStatus(nome, chave, novo);
+        });
 
         atualizarBotaoSalvar();
         montarTabela();
